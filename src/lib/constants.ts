@@ -1,4 +1,4 @@
-﻿/** Question length limits, shared by the composer and the decision layer. */
+/** Question length limits, shared by the composer and the decision layer. */
 export const MAX_QUESTION_LENGTH = 250
 
 /** Show the character counter only once the writer is getting close. */
@@ -15,7 +15,11 @@ export const EXAMPLE_QUESTIONS = [
   'Should I skip the gym?',
 ] as const
 
-/** Text used by the Web Share API, and by the clipboard fallback. */
+/**
+ * Text used by the Web Share API, and by the clipboard fallback.
+ * `probability` is the 0–1 confidence in `answer`.
+ */
 export function buildShareText(question: string, answer: string, probability: number): string {
-  return [question, '', `Jev says ${answer} — ${probability}%.`, '', SITE_DOMAIN].join('\n')
+  const percent = Math.round(probability * 100)
+  return [question, '', `Jev says ${answer} — ${percent}%.`, '', SITE_DOMAIN].join('\n')
 }

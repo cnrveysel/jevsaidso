@@ -11,7 +11,7 @@ type ShareState = 'idle' | 'shared' | 'copied' | 'failed'
 
 export function ResultCard({ decision, onReset }: ResultCardProps) {
   const [shareState, setShareState] = useState<ShareState>('idle')
-  const { answer, probability, question, mocked } = decision
+  const { answer, probability, question } = decision
 
   const handleShare = useCallback(async () => {
     const text = buildShareText(question, answer, probability)
@@ -58,7 +58,7 @@ export function ResultCard({ decision, onReset }: ResultCardProps) {
           {answer}
         </p>
         <p className="result__probability">
-          <span>{probability}%</span>
+          <span>{Math.round(probability * 100)}%</span>
           <span>confidence</span>
         </p>
       </div>
@@ -83,12 +83,6 @@ export function ResultCard({ decision, onReset }: ResultCardProps) {
             ? 'Copied to your clipboard.'
             : ''}
       </div>
-
-      {mocked ? (
-        <div className="mock-badge__row">
-          <span className="mock-badge">Mock decision</span>
-        </div>
-      ) : null}
     </section>
   )
 }

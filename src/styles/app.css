@@ -1,4 +1,4 @@
-﻿/* ── Shell ─────────────────────────────────────────────────────────────── */
+/* ── Shell ─────────────────────────────────────────────────────────────── */
 
 .page {
   display: flex;
@@ -431,24 +431,6 @@
   min-height: 1.1em;
 }
 
-.mock-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border: 1px dashed var(--line-strong);
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.mock-badge__row {
-  display: flex;
-  justify-content: center;
-}
 
 /* ── Footer ────────────────────────────────────────────────────────────── */
 

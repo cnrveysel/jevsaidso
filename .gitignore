@@ -1,4 +1,4 @@
-﻿node_modules
+node_modules
 dist
 dist-ssr
 *.local
@@ -35,3 +35,6 @@ Thumbs.db
 *.tsbuildinfo
 .eslintcache
 coverage
+
+# Vercel
+.vercel

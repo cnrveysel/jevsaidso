@@ -1,77 +1,95 @@
 ﻿/**
  * ─────────────────────────────────────────────────────────────────────────────
- *  DECISION LAYER
+ *  DECISION LAYER (client)
  * ─────────────────────────────────────────────────────────────────────────────
- *  The UI only ever talks to `askJev()`. Everything about *how* a decision is
- *  produced lives behind this single function, so swapping the temporary mock
- *  for the real TypeSafe Jev model is a one-file change:
+ *  The UI only ever talks to `askJev()`. That function calls our own server
+ *  endpoint, which owns the TypeSafe Jev credentials and normalizes the
+ *  verdict:
  *
  *      POST /api/ask
  *      { "question": "Should I text my ex?" }
- *      -> { "answer": "YES" | "NO", "probability": number }
+ *      -> { "answer": "YES" | "NO", "probability": 0.82, "mocked": false }
  *
- *  When the backend is ready, delete `getMockDecision` and replace the body of
- *  `askJev` with a `fetch('/api/ask', ...)` call. No component needs to change.
+ *  The TypeSafe API key lives in the server environment only. Nothing in this
+ *  file (or anywhere under `src/`) can access it.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 export type Verdict = 'YES' | 'NO'
 
-export interface Decision {
+/** Result shape returned by `POST /api/ask`. */
+export interface AskResponse {
   answer: Verdict
-  /** 0–100, the probability Jev attaches to `answer`. */
+  /** Probability of the returned `answer`, 0–1. */
   probability: number
-  /** Trimmed question the verdict belongs to. */
+}
+
+/** What the UI consumes: the verdict plus the question it belongs to. */
+export interface Decision extends AskResponse {
   question: string
-  /** True while results come from the local mock rather than the real model. */
-  mocked: boolean
 }
 
-/** Smallest / largest probability the mock will report. */
-const MOCK_MIN_PROBABILITY = 51
-const MOCK_MAX_PROBABILITY = 99
+/** Endpoint that proxies to the TypeSafe Jev model. */
+export const ASK_ENDPOINT = '/api/ask'
 
-/**
- * Tiny deterministic hash of the question, so a given question feels a little
- * consistent with itself instead of pure noise. Mock flavour only.
- */
-function hashQuestion(question: string): number {
-  let hash = 0
-  for (let index = 0; index < question.length; index += 1) {
-    hash = (hash * 31 + question.charCodeAt(index)) % 100000
+/** Copy shown when the decision service cannot be reached. */
+export const ASK_ERROR_MESSAGE = 'Jev is unavailable right now. Try again in a moment.'
+
+function isVerdict(value: unknown): value is Verdict {
+  return value === 'YES' || value === 'NO'
+}
+
+/** Narrow an unknown server payload to a safe `Decision` (client-side guard). */
+function parseAskResponse(payload: unknown): AskResponse | null {
+  if (typeof payload !== 'object' || payload === null) {
+    return null
   }
-  return hash
-}
 
-/**
- * TEMPORARY — random placeholder standing in for the TypeSafe Jev model.
- *
- * This is the exact seam the real API call will replace.
- */
-export function getMockDecision(question: string): Omit<Decision, 'question' | 'mocked'> {
-  const hash = hashQuestion(question)
-  const span = MOCK_MAX_PROBABILITY - MOCK_MIN_PROBABILITY
+  const { answer, probability } = payload as { answer?: unknown; probability?: unknown }
 
-  const probability = MOCK_MIN_PROBABILITY + Math.round(Math.random() * span)
+  if (!isVerdict(answer)) {
+    return null
+  }
+
+  if (typeof probability !== 'number' || !Number.isFinite(probability)) {
+    return null
+  }
+
+  // The server returns 0–1; be tolerant of a 0–100 value from any future host.
+  const normalized = probability > 1 ? probability / 100 : probability
 
   return {
-    answer: (hash + Math.round(Math.random() * 100)) % 2 === 0 ? 'YES' : 'NO',
-    probability,
+    answer,
+    probability: Math.min(1, Math.max(0, normalized)),
   }
 }
 
 /**
- * How long the mock "thinks" before answering. The real model responds on its
- * own schedule; this only exists so the deciding state is visible.
+ * Ask Jev.
+ *
+ * Throws on network failure or an unusable response; `App.tsx` already renders
+ * `ASK_ERROR_MESSAGE` for that case.
  */
-export const MOCK_DECISION_DELAY_MS = 780
-
-/** Ask Jev. Currently a local mock — see `getMockDecision` above. */
 export async function askJev(question: string): Promise<Decision> {
   const trimmed = question.trim()
 
-  await new Promise((resolve) => setTimeout(resolve, MOCK_DECISION_DELAY_MS))
-  const mock = getMockDecision(trimmed)
+  const response = await fetch(ASK_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: trimmed }),
+  })
 
-  return { ...mock, question: trimmed, mocked: true }
+  const payload: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(ASK_ERROR_MESSAGE)
+  }
+
+  const parsed = parseAskResponse(payload)
+
+  if (parsed === null) {
+    throw new Error(ASK_ERROR_MESSAGE)
+  }
+
+  return { ...parsed, question: trimmed }
 }

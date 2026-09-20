@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type FormEvent } from 'react'
-import { askJev, type Decision } from './lib/decision'
+import { ASK_ERROR_MESSAGE, askJev, type Decision } from './lib/decision'
 import { MAX_QUESTION_LENGTH } from './lib/constants'
 import { CharCount } from './components/CharCount'
 import { ExampleQuestions } from './components/ExampleQuestions'
@@ -42,7 +42,7 @@ export default function App() {
         setStatus('done')
       } catch {
         if (id !== requestId.current) return
-        setError('Jev is unavailable right now. Try again in a moment.')
+        setError(ASK_ERROR_MESSAGE)
         setStatus('idle')
       }
     },
