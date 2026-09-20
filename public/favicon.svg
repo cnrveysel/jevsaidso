@@ -1,0 +1,14 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Jev Said So">
+  <rect width="64" height="64" rx="14" fill="#14110f" />
+  <text
+    x="32"
+    y="45"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="38"
+    font-weight="700"
+    letter-spacing="-2"
+    fill="#f7f5f2"
+  >J</text>
+  <circle cx="46" cy="19" r="4.5" fill="#0f7a4a" />
+</svg>

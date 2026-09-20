@@ -1,0 +1,42 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Jev Said So">
+  <rect width="1200" height="630" fill="#f7f5f2" />
+  <circle cx="600" cy="250" r="7" fill="#14110f" />
+  <text
+    x="600"
+    y="145"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="34"
+    font-weight="600"
+    letter-spacing="10"
+    fill="#56504a"
+  >JEV SAID SO</text>
+  <text
+    x="600"
+    y="330"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="112"
+    font-weight="600"
+    letter-spacing="-4"
+    fill="#14110f"
+  >Can't decide?</text>
+  <text
+    x="600"
+    y="440"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="112"
+    font-weight="600"
+    letter-spacing="-4"
+    fill="#8d8580"
+  >Ask Jev.</text>
+  <text
+    x="600"
+    y="520"
+    text-anchor="middle"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="34"
+    fill="#56504a"
+  >One question. One decision.</text>
+</svg>
