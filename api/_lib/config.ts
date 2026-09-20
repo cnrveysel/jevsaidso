@@ -24,7 +24,21 @@ export const TYPESAFE_MODEL = 'jev-latest'
 export const DECISION_QUESTION_KEY = 'decision'
 
 /** Noul instruction: the reported value is P(answer is YES). */
-export const DECISION_INSTRUCTIONS = 'Should the answer to this yes-or-no question be YES?'
+export const DECISION_INSTRUCTIONS = `
+Answer the user's yes-or-no question as a decision, not as a prediction.
+
+Use only the information explicitly provided by the user.
+Give strong weight to the user's stated preferences, feelings, goals, and circumstances.
+Interpret the question literally and from the user's perspective.
+
+Do not favor NO simply because it preserves the status quo.
+Do not favor YES simply because it represents action or change.
+
+If the provided information strongly supports one answer, reflect that clearly.
+If the information is weak, incomplete, or genuinely balanced, stay close to 0.5.
+
+Return the probability that YES is the more appropriate answer to the user's question.
+`
 
 /** Authoritative question cap; mirrors the client-side limit. */
 export const MAX_QUESTION_LENGTH = 250
