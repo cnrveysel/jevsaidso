@@ -12,6 +12,8 @@ import {
   DECISION_INSTRUCTIONS,
   DECISION_QUESTION_KEY,
   MAX_QUESTION_LENGTH,
+  RATE_LIMITED_MESSAGE,
+  RATE_LIMIT_WINDOW_SECONDS,
   TYPESAFE_API_KEY_ENV,
   TYPESAFE_BASE_URL_ENV,
   TYPESAFE_ENDPOINT,
@@ -19,6 +21,7 @@ import {
   UNAVAILABLE_MESSAGE,
   UPSTREAM_TIMEOUT_MS,
 } from './config.js'
+import { getClientId, getRateLimiter, type RateLimiter, type RequestHeaders } from './rate-limit.js'
 
 export type Verdict = 'YES' | 'NO'
 
@@ -38,17 +41,29 @@ export interface AskDependencies {
   endpoint?: string
   /** Injected for tests. */
   timeoutMs?: number
+  /**
+   * Injected for tests. Defaults to the shared Upstash-backed limiter, or
+   * `null` when Upstash is not configured (in which case nothing is limited).
+   */
+  rateLimiter?: RateLimiter | null
+  /** Identifies the caller for rate limiting. Defaults to the environment. */
+  clientId?: string
+  /** Request headers, used to derive `clientId`. */
+  headers?: RequestHeaders
 }
 
 export interface AskResult {
   status: number
   body: AskPayload | { error: string }
+  /** Extra response headers (e.g. `Retry-After` on a 429). */
+  headers?: Record<string, string>
 }
 
 /** Minimal shape of the Vercel request object we rely on. */
 export interface MinimalRequest {
   method?: string
   body?: unknown
+  headers?: RequestHeaders
 }
 
 /** Minimal shape of the Vercel response object we rely on. */
@@ -117,8 +132,12 @@ function readNoul(body: unknown, questionKey: string): unknown {
   return (entry as { noul?: unknown }).noul
 }
 
-function jsonResult(status: number, body: AskPayload | { error: string }): AskResult {
-  return { status, body }
+function jsonResult(
+  status: number,
+  body: AskPayload | { error: string },
+  headers?: Record<string, string>,
+): AskResult {
+  return headers ? { status, body, headers } : { status, body }
 }
 
 /**
@@ -160,6 +179,8 @@ export async function handleAsk(
       ? `${process.env[TYPESAFE_BASE_URL_ENV]}/v1/systemone`
       : TYPESAFE_ENDPOINT,
     timeoutMs = UPSTREAM_TIMEOUT_MS,
+    rateLimiter = getRateLimiter(),
+    clientId = getClientId(dependencies.headers),
   } = dependencies
 
   const body = typeof rawBody === 'string' ? safeJsonParse(rawBody) : rawBody
@@ -177,6 +198,22 @@ export async function handleAsk(
 
   if ('error' in validated) {
     return jsonResult(400, { error: validated.error })
+  }
+
+  // Rate limit before anything costs money: a rejected request must never
+  // reach the TypeSafe/Jev API.
+  if (rateLimiter) {
+    const outcome = await rateLimiter.limit(clientId)
+
+    if (outcome === 'limited') {
+      return jsonResult(
+        429,
+        { error: RATE_LIMITED_MESSAGE },
+        { 'Retry-After': String(RATE_LIMIT_WINDOW_SECONDS) },
+      )
+    }
+
+    // `unavailable` means Upstash could not answer; fail open on purpose.
   }
 
   if (!apiKey) {
@@ -276,7 +313,11 @@ export default async function handler(
     return
   }
 
-  const result = await handleAsk(request.body)
+  const result = await handleAsk(request.body, { headers: request.headers })
+
+  for (const [name, value] of Object.entries(result.headers ?? {})) {
+    response.setHeader(name, value)
+  }
 
   response.status(result.status).json(result.body)
 }

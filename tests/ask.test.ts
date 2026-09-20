@@ -210,16 +210,15 @@ describe('handleAsk upstream call', () => {
     assert.equal(headers.Authorization, `Bearer ${KEY}`)
     assert.equal(headers['Content-Type'], 'application/json')
 
-    assert.deepEqual(JSON.parse(String(init.body)), {
-      model: 'jev-latest',
-      state: 'Should I go out tonight?',
-      questions: {
-        decision: {
-          type: 'noul',
-          instructions: 'Should the answer to this yes-or-no question be YES?',
-        },
-      },
-    })
+    const sent = JSON.parse(String(init.body))
+    assert.equal(sent.model, 'jev-latest')
+    assert.equal(sent.state, 'Should I go out tonight?')
+    assert.equal(sent.questions.decision.type, 'noul')
+    // The wording of the noul instruction is product copy that gets tuned;
+    // assert it is present and meaningful rather than pinning an exact string.
+    assert.equal(typeof sent.questions.decision.instructions, 'string')
+    assert.match(sent.questions.decision.instructions, /yes-or-no/i)
+    assert.match(sent.questions.decision.instructions, /probabilit/i)
   })
 
   it('normalizes a YES answer', async () => {

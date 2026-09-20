@@ -8,9 +8,12 @@
  *   npm run dev        -> http://localhost:5173  (app + /api/ask)
  *   npm run dev:vite   -> frontend only, no /api  (shows the retry state)
  *
- * TYPESAFE_API_KEY is read from `.env.local` (or the shell environment) by
- * Vite's own dotenv loading, and is used server-side only. Only VITE_-prefixed
- * values are ever exposed to the browser.
+ * TYPESAFE_API_KEY and the Upstash credentials are read from `.env.local` (or
+ * the shell environment) by Vite's own dotenv loading, and are used server-side
+ * only. Only VITE_-prefixed values are ever exposed to the browser.
+ *
+ * Rate limiting is optional locally: with no Upstash credentials the endpoint
+ * runs unlimited, which keeps development and testing usable.
  */
 
 import { createServer as createHttpServer } from 'node:http'
@@ -27,8 +30,20 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const mode = process.env.NODE_ENV ?? 'development'
 
 const env = loadEnv(mode, projectRoot, '')
-if (env.TYPESAFE_API_KEY && !process.env.TYPESAFE_API_KEY) {
-  process.env.TYPESAFE_API_KEY = env.TYPESAFE_API_KEY
+
+// Forward server-side secrets from .env.local into the process environment.
+// Only these explicitly named keys are copied — never anything VITE_-prefixed.
+const SERVER_ENV_KEYS = [
+  'TYPESAFE_API_KEY',
+  'TYPESAFE_BASE_URL',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
+]
+
+for (const key of SERVER_ENV_KEYS) {
+  if (env[key] && !process.env[key]) {
+    process.env[key] = env[key]
+  }
 }
 
 /** Read the raw request body. */
@@ -81,7 +96,7 @@ const server = createHttpServer(async (request, response) => {
       },
     }
 
-    await askHandler({ method: request.method, body }, reply)
+    await askHandler({ method: request.method, body, headers: request.headers }, reply)
     return
   }
 
@@ -115,9 +130,16 @@ const port = Number(process.env.PORT ?? 5173)
 
 server.listen(port, () => {
   const hasKey = Boolean(process.env.TYPESAFE_API_KEY)
+  const hasUpstash = Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
+  )
+
   console.log(`\n  Jev Said So  ->  http://localhost:${port}`)
   console.log(
-    `  /api/ask     ->  ${hasKey ? 'live (TYPESAFE_API_KEY detected)' : 'NOT configured (set TYPESAFE_API_KEY in .env.local)'}\n`,
+    `  /api/ask     ->  ${hasKey ? 'live (TYPESAFE_API_KEY detected)' : 'NOT configured (set TYPESAFE_API_KEY in .env.local)'}`,
+  )
+  console.log(
+    `  rate limit   ->  ${hasUpstash ? 'enabled (Upstash detected)' : 'disabled (set UPSTASH_REDIS_REST_URL / _TOKEN in .env.local)'}\n`,
   )
 })
 

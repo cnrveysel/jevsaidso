@@ -4,15 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev-server.mjs",
+    "dev": "node --import ./scripts/ts-resolve-hooks.mjs scripts/dev-server.mjs",
     "dev:vite": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node --test tests/*.test.ts",
-    "test:api": "node --test tests/ask.test.ts"
+    "test": "node --import ./scripts/ts-resolve-hooks.mjs --test tests/*.test.ts",
+    "test:api": "node --import ./scripts/ts-resolve-hooks.mjs --test tests/ask.test.ts"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.1.0",
+    "@upstash/redis": "^1.38.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
