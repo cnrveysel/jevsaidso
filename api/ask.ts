@@ -7,7 +7,7 @@
  * server only and never reaches the browser.
  */
 
-export { default } from './_lib/ask.ts'
+export { default } from './_lib/ask'
 
 export const config = {
   runtime: "nodejs",

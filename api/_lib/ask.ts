@@ -18,7 +18,7 @@ import {
   TYPESAFE_MODEL,
   UNAVAILABLE_MESSAGE,
   UPSTREAM_TIMEOUT_MS,
-} from './config.ts'
+} from './config'
 
 export type Verdict = 'YES' | 'NO'
 
