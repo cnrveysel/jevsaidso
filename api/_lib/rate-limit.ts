@@ -27,6 +27,10 @@ import {
   UPSTASH_REDIS_TOKEN_ENV,
   UPSTASH_REDIS_URL_ENV,
 } from './config.js'
+import { readHeader, type RequestHeaders } from './headers.js'
+
+// Re-exported so existing server-side imports keep working unchanged.
+export type { RequestHeaders }
 
 export type RateLimitOutcome = 'allowed' | 'limited' | 'unavailable'
 
@@ -35,32 +39,18 @@ export interface RateLimiter {
   limit(identifier: string): Promise<RateLimitOutcome>
 }
 
-/** Header bag as supplied by the Vercel Node runtime. */
-export type RequestHeaders =
-  | Record<string, string | string[] | undefined>
-  | undefined
-  | null
-
 /**
  * Identify the caller.
  *
- * Vercel's proxy computes these headers and overwrites any client-supplied
- * `x-forwarded-for`, so they cannot be spoofed by the application. `x-real-ip`
- * comes first because it is what Vercel's own `ipAddress()` helper reads.
- * A client-supplied value is never trusted over a Vercel-provided one.
+ * Vercel's proxy computes these headers, so they cannot be spoofed by the
+ * application. The order of `CLIENT_IP_HEADERS` is what keeps that true: a
+ * client-supplied value is never trusted over a Vercel-provided one.
  */
 export function getClientId(headers: RequestHeaders): string {
-  if (!headers) {
-    return UNKNOWN_CLIENT_ID
-  }
-
   for (const name of CLIENT_IP_HEADERS) {
-    const raw = headers[name]
+    const value = readHeader(headers, name)
 
-    // Node can hand back a repeated header as an array; take the first value.
-    const value = Array.isArray(raw) ? raw[0] : raw
-
-    if (typeof value !== 'string' || value.length === 0) {
+    if (value === null) {
       continue
     }
 

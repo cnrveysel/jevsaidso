@@ -315,6 +315,21 @@ export const CLIENT_IP_HEADERS = [
 /** Bucket used when no usable client IP is present. */
 export const UNKNOWN_CLIENT_ID = 'unknown'
 
+/**
+ * Private benchmark bypass.
+ *
+ * Server-side only. When unset (or empty) the bypass is disabled entirely, and
+ * every request is rate limited like an ordinary public one. Set
+ * BENCHMARK_BYPASS_TOKEN in Vercel to enable it.
+ *
+ * Note the deliberately non-`VITE_` name: a `VITE_`-prefixed value would be
+ * bundled into client JavaScript and become public.
+ */
+export const BENCHMARK_BYPASS_TOKEN_ENV = 'BENCHMARK_BYPASS_TOKEN'
+
+/** Header a benchmark client presents to show it may skip the rate limiter. */
+export const BENCHMARK_TOKEN_HEADER = 'x-benchmark-token'
+
 /** Authoritative question cap; mirrors the client-side limit. */
 export const MAX_QUESTION_LENGTH = 250
 

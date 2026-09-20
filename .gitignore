@@ -38,3 +38,7 @@ coverage
 
 # Vercel
 .vercel
+
+# Benchmark harness output (keep the directory, ignore every run)
+benchmarks/*
+!benchmarks/.gitkeep

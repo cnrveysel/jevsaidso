@@ -21,7 +21,9 @@ import {
   UNAVAILABLE_MESSAGE,
   UPSTREAM_TIMEOUT_MS,
 } from './config.js'
-import { getClientId, getRateLimiter, type RateLimiter, type RequestHeaders } from './rate-limit.js'
+import { isBenchmarkRequest } from './benchmark.js'
+import type { RequestHeaders } from './headers.js'
+import { getClientId, getRateLimiter, type RateLimiter } from './rate-limit.js'
 
 export type Verdict = 'YES' | 'NO'
 
@@ -48,8 +50,13 @@ export interface AskDependencies {
   rateLimiter?: RateLimiter | null
   /** Identifies the caller for rate limiting. Defaults to the environment. */
   clientId?: string
-  /** Request headers, used to derive `clientId`. */
+  /** Request headers, used to derive `clientId` and detect benchmarks. */
   headers?: RequestHeaders
+  /**
+   * Injected for tests. Defaults to the environment check. When `true` the
+   * rate-limit check is skipped; everything else runs normally.
+   */
+  benchmark?: boolean
 }
 
 export interface AskResult {
@@ -181,6 +188,7 @@ export async function handleAsk(
     timeoutMs = UPSTREAM_TIMEOUT_MS,
     rateLimiter = getRateLimiter(),
     clientId = getClientId(dependencies.headers),
+    benchmark = isBenchmarkRequest(dependencies.headers),
   } = dependencies
 
   const body = typeof rawBody === 'string' ? safeJsonParse(rawBody) : rawBody
@@ -202,7 +210,11 @@ export async function handleAsk(
 
   // Rate limit before anything costs money: a rejected request must never
   // reach the TypeSafe/Jev API.
-  if (rateLimiter) {
+  //
+  // The private benchmark bypass skips only this check. Validation above has
+  // already run, and the TypeSafe call below still happens normally, so a
+  // bypassed request behaves identically to a public one otherwise.
+  if (rateLimiter && !benchmark) {
     const outcome = await rateLimiter.limit(clientId)
 
     if (outcome === 'limited') {
