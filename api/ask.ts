@@ -10,5 +10,5 @@
 export { default } from './_lib/ask.ts'
 
 export const config = {
-  runtime: 'nodejs20.x',
-}
+  runtime: "nodejs",
+};
